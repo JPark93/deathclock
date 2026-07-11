@@ -5,6 +5,7 @@ A privacy-first, client-side web application that calculates your expected expir
 ## Features
 - Live countdown timer updating every second
 - Life expectancy data from WHO Global Health Observatory API (194 countries)
+- Optional state-level refinement for United States estimates
 - Lifestyle factor modifiers (smoking, exercise, alcohol, BMI)
 - Dark macabre theme with procedural ambient audio
 - 100% client-side — zero server requests after page load
@@ -26,11 +27,13 @@ A privacy-first, client-side web application that calculates your expected expir
 - Python 3 (urllib only) for build-time data fetching
 
 ## Data Source
-Life expectancy data is fetched at build time from the WHO Global Health Observatory (GHO) OData API:
-- API: https://ghoapi.azureedge.net/api
-- Indicator: WHOSIS_000001 (Life expectancy at birth)
-- Coverage: 194 WHO Member States
-- Data is bundled as a static JSON file — no runtime API calls
+Life expectancy data is fetched at build time and bundled as a static JSON file, with no runtime requests to third-party services:
+
+- WHO Global Health Observatory: `WHOSIS_000001` country and sex-specific life expectancy
+- Our World in Data: historical country life expectancy used to extend year coverage
+- CDC/NCHS: [U.S. State Life Tables, 2021](https://www.cdc.gov/nchs/data-visualization/state-life-expectancy/index_2021.htm), covering all 50 states and the District of Columbia by sex
+
+The state figures are 2021 complete period life-table estimates. They refine the geographic baseline when a state is selected, but they are a population-level snapshot of 2021 mortality conditions, not historical state data for the user's birth year or an individual prediction.
 
 ## Lifestyle Modifiers
 | Factor | Modifier | Notes |
@@ -53,15 +56,21 @@ Alcohol source notes:
 Note: These are population-level epidemiological estimates for entertainment purposes, not personalized medical advice.
 
 ## Data Refresh Workflow
-Life expectancy data is fetched at build time from the WHO Global Health Observatory (GHO) OData API.
+Life expectancy data is fetched at build time from WHO, Our World in Data, and CDC/NCHS.
 
 1. From the project root, run:
 ```bash
 python scripts/fetch_data.py
 ```
-2. This pulls the latest data from `WHOSIS_000001` and updates `data/life_expectancy.json`
+2. This refreshes the country datasets and the official 2021 U.S. state dataset in `data/life_expectancy.json`
 3. No pip dependencies needed — uses only Python 3 stdlib (`urllib`)
 4. Commit the updated JSON file and push to your repository to refresh the live site
+
+To refresh only the nested U.S. state records without rebuilding the country history:
+
+```bash
+python scripts/fetch_data.py --states-only
+```
 
 ## Deployment
 

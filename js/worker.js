@@ -223,12 +223,18 @@ function calculate(data) {
         throw new Error('Invalid birth date: ' + data.birthDate);
     }
 
-    // 1. Base life expectancy from country years data, birthYear-aware lookup
+    // 1. Prefer optional regional data; otherwise use the country history.
+    var region = data.region && data.region.years && data.region.years.length
+        ? data.region
+        : null;
     var baseResult = resolveBaseExpectancy(
-        data.country.years,   // the historical years array
+        region ? region.years : data.country.years,
         data.birthYear,       // integer — extracted from birth date in app.js
         data.sex
     );
+    if (region) {
+        baseResult.dataSource = (region.source || 'Regional life expectancy data') + ' - ' + region.name;
+    }
     var baseExpectancy = baseResult.value;
 
     // 2. Compute modifiers from lifestyle data

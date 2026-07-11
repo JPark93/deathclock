@@ -44,6 +44,9 @@
         DOM.birthDate         = document.getElementById('birth-date');
         DOM.sex               = document.getElementById('sex');
         DOM.country           = document.getElementById('country');
+        DOM.regionGroup       = document.getElementById('region-group');
+        DOM.regionLabel       = document.getElementById('region-label');
+        DOM.region            = document.getElementById('region');
         DOM.smoker            = document.getElementById('smoker');
         DOM.exercise          = document.getElementById('exercise');
         DOM.alcohol           = document.getElementById('alcohol');
@@ -102,6 +105,7 @@
 
         // Wire up event listeners
         DOM.form.addEventListener('submit', handleFormSubmit);
+        DOM.country.addEventListener('change', updateRegionDropdown);
         DOM.clearButton.addEventListener('click', clearAllData);
         DOM.editButton.addEventListener('click', editDetails);
         DOM.audioToggle.addEventListener('click', handleAudioToggle);
@@ -135,7 +139,39 @@
             opt.value = i;                           // store array index as value
             opt.textContent = sortedCountries[i].name;
             DOM.country.appendChild(opt);
+
+            if (sortedCountries[i].code === 'USA') {
+                opt.selected = true;
+                opt.defaultSelected = true;
+            }
         }
+
+        updateRegionDropdown();
+    }
+
+    function updateRegionDropdown() {
+        var countryIndex = DOM.country.value;
+        var country = countryIndex === '' ? null : sortedCountries[parseInt(countryIndex)];
+        var regions = country && country.regions;
+
+        DOM.region.innerHTML = '<option value="">Use national estimate</option>';
+
+        if (!regions || !regions.items || !regions.items.length) {
+            DOM.region.disabled = true;
+            DOM.regionGroup.hidden = true;
+            return;
+        }
+
+        DOM.regionLabel.textContent = regions.label || 'Region';
+        for (var i = 0; i < regions.items.length; i++) {
+            var opt = document.createElement('option');
+            opt.value = i;
+            opt.textContent = regions.items[i].name;
+            DOM.region.appendChild(opt);
+        }
+
+        DOM.region.disabled = false;
+        DOM.regionGroup.hidden = false;
     }
 
     // =========================================================================
@@ -208,12 +244,25 @@
             return;
         }
 
+        var regionObj = null;
+        if (DOM.region.value !== '' && countryObj.regions && countryObj.regions.items) {
+            var selectedRegion = countryObj.regions.items[parseInt(DOM.region.value)];
+            if (selectedRegion) {
+                regionObj = {
+                    name: selectedRegion.name,
+                    years: selectedRegion.years,
+                    source: countryObj.regions.source
+                };
+            }
+        }
+
         birthDateObj = parsedBirthDate;
 
         userData = {
             birthDate: birthDateValue,
             sex: sexValue,
             country: countryObj,   // full object including years array
+            region: regionObj,
             lifestyle: {
                 smoker: smokerValue,
                 exercise: exerciseValue,
@@ -230,6 +279,7 @@
                 birthYear: birthYear,
                 sex: sexValue,
                 country: countryObj,
+                region: regionObj,
                 lifestyle: {
                     smoker: smokerValue,
                     exercise: exerciseValue,
@@ -517,46 +567,167 @@
         }
 
         function createBloodGradient(startY, endY) {
-            var gradient = ctx.createLinearGradient(0, startY, width, endY);
-            gradient.addColorStop(0, '#310000');
-            gradient.addColorStop(0.48, '#920909');
-            gradient.addColorStop(0.78, '#5b0000');
-            gradient.addColorStop(1, '#230000');
+            var gradient = ctx.createLinearGradient(0, startY, width, startY);
+            gradient.addColorStop(0, '#100000');
+            gradient.addColorStop(0.14, '#360002');
+            gradient.addColorStop(0.38, '#710407');
+            gradient.addColorStop(0.54, '#9f0c0f');
+            gradient.addColorStop(0.68, '#610204');
+            gradient.addColorStop(0.9, '#270001');
+            gradient.addColorStop(1, '#0c0000');
             return gradient;
+        }
+
+        function roundedRectPath(x, y, rectWidth, rectHeight, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + rectWidth - radius, y);
+            ctx.quadraticCurveTo(x + rectWidth, y, x + rectWidth, y + radius);
+            ctx.lineTo(x + rectWidth, y + rectHeight - radius);
+            ctx.quadraticCurveTo(x + rectWidth, y + rectHeight, x + rectWidth - radius, y + rectHeight);
+            ctx.lineTo(x + radius, y + rectHeight);
+            ctx.quadraticCurveTo(x, y + rectHeight, x, y + rectHeight - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+        }
+
+        function drawBloodDepth(startY, endY) {
+            if (endY - startY < 2) return;
+
+            var depthGradient = ctx.createLinearGradient(0, startY, 0, endY);
+            depthGradient.addColorStop(0, 'rgba(255, 92, 84, 0.17)');
+            depthGradient.addColorStop(0.12, 'rgba(121, 0, 4, 0)');
+            depthGradient.addColorStop(0.72, 'rgba(26, 0, 1, 0.08)');
+            depthGradient.addColorStop(1, 'rgba(5, 0, 0, 0.52)');
+            ctx.fillStyle = depthGradient;
+            ctx.fillRect(0, startY, width, endY - startY);
+
+            var sheen = ctx.createRadialGradient(centerX - 13, (startY + endY) / 2, 1, centerX - 10, (startY + endY) / 2, width * 0.42);
+            sheen.addColorStop(0, 'rgba(255, 108, 98, 0.18)');
+            sheen.addColorStop(0.22, 'rgba(195, 24, 24, 0.08)');
+            sheen.addColorStop(0.62, 'rgba(60, 0, 2, 0)');
+            sheen.addColorStop(1, 'rgba(0, 0, 0, 0.24)');
+            ctx.fillStyle = sheen;
+            ctx.fillRect(0, startY, width, endY - startY);
+
+            var texture = [
+                [0.31, 0.27, 2.2],
+                [0.62, 0.42, 1.5],
+                [0.45, 0.68, 2.8],
+                [0.73, 0.77, 1.9],
+                [0.24, 0.86, 1.3]
+            ];
+            ctx.fillStyle = 'rgba(8, 0, 0, 0.2)';
+            for (var textureIndex = 0; textureIndex < texture.length; textureIndex++) {
+                var fleck = texture[textureIndex];
+                ctx.beginPath();
+                ctx.ellipse(width * fleck[0], startY + ((endY - startY) * fleck[1]), fleck[2] * 1.7, fleck[2], -0.35, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function drawGlassReflections() {
+            var glassGradient = ctx.createLinearGradient(18, 0, width - 18, 0);
+            glassGradient.addColorStop(0, 'rgba(214, 225, 224, 0.16)');
+            glassGradient.addColorStop(0.08, 'rgba(181, 201, 201, 0.06)');
+            glassGradient.addColorStop(0.2, 'rgba(255, 255, 255, 0)');
+            glassGradient.addColorStop(0.66, 'rgba(255, 255, 255, 0.015)');
+            glassGradient.addColorStop(0.84, 'rgba(182, 199, 199, 0.07)');
+            glassGradient.addColorStop(1, 'rgba(77, 91, 92, 0.2)');
+            ctx.fillStyle = glassGradient;
+            ctx.fillRect(18, 18, width - 36, height - 36);
+
+            ctx.strokeStyle = 'rgba(235, 242, 238, 0.29)';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(27, 30);
+            ctx.bezierCurveTo(29, 63, centerX - 17, 98, centerX - 10, 115);
+            ctx.stroke();
+
+            ctx.strokeStyle = 'rgba(210, 221, 219, 0.1)';
+            ctx.lineWidth = 2.2;
+            ctx.beginPath();
+            ctx.moveTo(width - 29, 35);
+            ctx.bezierCurveTo(width - 32, 65, centerX + 18, 99, centerX + 11, 114);
+            ctx.stroke();
         }
 
         function drawFrame() {
             ctx.save();
 
-            var frameGradient = ctx.createLinearGradient(0, 0, width, 0);
-            frameGradient.addColorStop(0, '#2b1812');
-            frameGradient.addColorStop(0.28, '#80523a');
-            frameGradient.addColorStop(0.7, '#573222');
-            frameGradient.addColorStop(1, '#20110d');
-
-            ctx.strokeStyle = '#4d2d20';
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.72)';
             ctx.lineWidth = 5;
-            ctx.beginPath();
-            ctx.moveTo(13, 17);
-            ctx.lineTo(13, height - 17);
-            ctx.moveTo(width - 13, 17);
-            ctx.lineTo(width - 13, height - 17);
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
+            ctx.shadowBlur = 9;
+            hourglassPath();
             ctx.stroke();
+            ctx.shadowBlur = 0;
 
-            ctx.fillStyle = frameGradient;
-            ctx.fillRect(6, 5, width - 12, 16);
-            ctx.fillRect(6, height - 21, width - 12, 16);
-
-            ctx.strokeStyle = 'rgba(229, 205, 188, 0.45)';
-            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = 'rgba(184, 196, 194, 0.32)';
+            ctx.lineWidth = 2.5;
+            hourglassPath();
+            ctx.stroke();
+            ctx.strokeStyle = 'rgba(244, 239, 226, 0.35)';
+            ctx.lineWidth = 0.8;
             hourglassPath();
             ctx.stroke();
 
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)';
+            var postGradient = ctx.createLinearGradient(8, 0, 18, 0);
+            postGradient.addColorStop(0, '#160b08');
+            postGradient.addColorStop(0.22, '#4a2c20');
+            postGradient.addColorStop(0.48, '#8a6248');
+            postGradient.addColorStop(0.66, '#4d2e21');
+            postGradient.addColorStop(1, '#130907');
+
+            ctx.fillStyle = postGradient;
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+            ctx.shadowBlur = 4;
+            roundedRectPath(8, 14, 10, height - 28, 4);
+            ctx.fill();
+
+            var rightPostGradient = ctx.createLinearGradient(width - 18, 0, width - 8, 0);
+            rightPostGradient.addColorStop(0, '#130907');
+            rightPostGradient.addColorStop(0.34, '#4d2e21');
+            rightPostGradient.addColorStop(0.56, '#8a6248');
+            rightPostGradient.addColorStop(0.78, '#4a2c20');
+            rightPostGradient.addColorStop(1, '#160b08');
+            ctx.fillStyle = rightPostGradient;
+            roundedRectPath(width - 18, 14, 10, height - 28, 4);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            var baseGradient = ctx.createLinearGradient(0, 0, 0, 21);
+            baseGradient.addColorStop(0, '#2a1710');
+            baseGradient.addColorStop(0.18, '#91694e');
+            baseGradient.addColorStop(0.38, '#63422f');
+            baseGradient.addColorStop(0.72, '#321c14');
+            baseGradient.addColorStop(1, '#100806');
+
+            ctx.fillStyle = baseGradient;
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+            ctx.shadowBlur = 6;
+            roundedRectPath(3, 3, width - 6, 20, 4);
+            ctx.fill();
+            roundedRectPath(3, height - 23, width - 6, 20, 4);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            ctx.strokeStyle = 'rgba(232, 198, 158, 0.25)';
             ctx.lineWidth = 1;
             ctx.beginPath();
-            ctx.moveTo(27, 29);
-            ctx.bezierCurveTo(29, 61, centerX - 16, 99, centerX - 10, 116);
+            ctx.moveTo(9, 7.5);
+            ctx.lineTo(width - 9, 7.5);
+            ctx.moveTo(9, height - 18.5);
+            ctx.lineTo(width - 9, height - 18.5);
+            ctx.stroke();
+
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.68)';
+            ctx.beginPath();
+            ctx.moveTo(8, 20);
+            ctx.lineTo(width - 8, 20);
+            ctx.moveTo(8, height - 5.5);
+            ctx.lineTo(width - 8, height - 5.5);
             ctx.stroke();
             ctx.restore();
         }
@@ -566,7 +737,13 @@
 
             ctx.save();
             hourglassPath();
-            ctx.fillStyle = 'rgba(15, 8, 7, 0.7)';
+            var chamberGradient = ctx.createLinearGradient(0, 0, width, 0);
+            chamberGradient.addColorStop(0, 'rgba(3, 4, 4, 0.92)');
+            chamberGradient.addColorStop(0.18, 'rgba(15, 13, 12, 0.74)');
+            chamberGradient.addColorStop(0.54, 'rgba(24, 19, 17, 0.52)');
+            chamberGradient.addColorStop(0.82, 'rgba(11, 10, 9, 0.76)');
+            chamberGradient.addColorStop(1, 'rgba(2, 3, 3, 0.94)');
+            ctx.fillStyle = chamberGradient;
             ctx.fill();
             ctx.clip();
 
@@ -580,13 +757,16 @@
                 ctx.shadowBlur = 9;
                 ctx.fillRect(0, topBloodY, width, neckTopY - topBloodY + 5);
                 ctx.shadowBlur = 0;
+                drawBloodDepth(topBloodY, neckTopY + 5);
 
-                ctx.strokeStyle = 'rgba(255, 135, 125, 0.38)';
-                ctx.lineWidth = 1.2;
+                var topSurfaceGradient = ctx.createLinearGradient(centerX - 50, 0, centerX + 50, 0);
+                topSurfaceGradient.addColorStop(0, 'rgba(62, 0, 2, 0.7)');
+                topSurfaceGradient.addColorStop(0.48, 'rgba(255, 124, 111, 0.46)');
+                topSurfaceGradient.addColorStop(1, 'rgba(48, 0, 1, 0.72)');
+                ctx.fillStyle = topSurfaceGradient;
                 ctx.beginPath();
-                ctx.moveTo(0, topBloodY);
-                ctx.lineTo(width, topBloodY);
-                ctx.stroke();
+                ctx.ellipse(centerX, topBloodY + 0.6, width * 0.44, 3.2, 0, 0, Math.PI * 2);
+                ctx.fill();
             }
 
             var step = width / (pointCount - 1);
@@ -610,14 +790,15 @@
                 ctx.shadowBlur = 12;
                 ctx.fill();
                 ctx.shadowBlur = 0;
+                drawBloodDepth(levelY, bottomInnerY + 8);
 
                 ctx.beginPath();
                 ctx.moveTo(0, levelY + surface[0].y);
                 for (var j = 1; j < pointCount; j++) {
                     ctx.lineTo(j * step, levelY + surface[j].y);
                 }
-                ctx.strokeStyle = 'rgba(255, 135, 125, 0.42)';
-                ctx.lineWidth = 1.4;
+                ctx.strokeStyle = 'rgba(255, 132, 119, 0.46)';
+                ctx.lineWidth = 1.15;
                 ctx.stroke();
             }
 
@@ -630,7 +811,13 @@
                 ctx.beginPath();
                 ctx.ellipse(drop.x, drop.y, 5, 7, 0, 0, Math.PI * 2);
                 ctx.fill();
+
+                ctx.fillStyle = 'rgba(255, 210, 197, 0.46)';
+                ctx.beginPath();
+                ctx.ellipse(drop.x - 1.5, drop.y - 2, 1, 1.8, -0.25, 0, Math.PI * 2);
+                ctx.fill();
             }
+            drawGlassReflections();
             ctx.restore();
             drawFrame();
         }
@@ -845,6 +1032,7 @@
         // Reset the form
         if (DOM.form) {
             DOM.form.reset();
+            updateRegionDropdown();
         }
         if (DOM.formSection) {
             DOM.formSection.classList.remove('hidden');

@@ -1,13 +1,16 @@
 import json
 import csv
 import os
+import sys
 import urllib.request
 import io
 from datetime import datetime, timezone
 
 WHO_URL = "https://ghoapi.azureedge.net/api/WHOSIS_000001?$format=json"
 OWID_URL = "https://ourworldindata.org/grapher/life-expectancy-hmd-unwpp.csv"
-OUTPUT_PATH = r"C:\Users\PC\Desktop\Apps\DC\data\life_expectancy.json"
+CDC_STATE_URL = "https://data.cdc.gov/api/views/it4f-frdc/rows.csv?accessType=DOWNLOAD&bom=true&format=true"
+CDC_STATE_PAGE = "https://www.cdc.gov/nchs/data-visualization/state-life-expectancy/index_2021.htm"
+OUTPUT_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "life_expectancy.json")
 
 def fetch_json(url):
     """Fetch JSON from URL with retry."""
@@ -78,6 +81,74 @@ def download_owid():
         })
     print(f"OWID total country-year records: {len(rows)}")
     return rows
+
+def download_us_states():
+    """Download 2021 CDC/NCHS life expectancy by state and sex."""
+    text = fetch_text(CDC_STATE_URL).lstrip("\ufeff")
+    reader = csv.DictReader(io.StringIO(text))
+    sex_fields = {"Total": "both", "Male": "male", "Female": "female"}
+    state_values = {}
+
+    for row in reader:
+        name = (row.get("State") or "").strip()
+        field = sex_fields.get((row.get("Sex") or "").strip())
+        value_text = (row.get("LE") or "").strip()
+        if not name or not field or not value_text:
+            continue
+        try:
+            value = round(float(value_text), 1)
+        except ValueError:
+            continue
+        state_values.setdefault(name, {})[field] = value
+
+    items = []
+    for name in sorted(state_values):
+        values = state_values[name]
+        if not all(field in values for field in ("both", "male", "female")):
+            continue
+        items.append({
+            "name": name,
+            "years": [{
+                "year": 2021,
+                "both": values["both"],
+                "male": values["male"],
+                "female": values["female"],
+            }],
+        })
+
+    if len(items) != 51:
+        raise ValueError(f"Expected 51 complete CDC state records, found {len(items)}")
+
+    print(f"CDC complete state records: {len(items)}")
+    return {
+        "label": "State lived in most",
+        "source": "CDC/NCHS U.S. State Life Tables, 2021",
+        "sourceUrl": CDC_STATE_PAGE,
+        "items": items,
+    }
+
+def write_output(output):
+    """Write the bundled JSON in its compact production format."""
+    os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
+    with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
+        json.dump(output, f, separators=(",", ":"), ensure_ascii=False)
+
+def update_us_states_only():
+    """Refresh the nested U.S. state records without rebuilding country data."""
+    with open(OUTPUT_PATH, encoding="utf-8") as f:
+        output = json.load(f)
+
+    regions = download_us_states()
+    usa = next((country for country in output.get("countries", []) if country.get("code") == "USA"), None)
+    if not usa:
+        raise ValueError("United States record not found in bundled data")
+
+    usa["regions"] = regions
+    cdc_source = "CDC/NCHS U.S. State Life Tables 2021"
+    if cdc_source not in output.get("source", ""):
+        output["source"] = output.get("source", "") + " + " + cdc_source
+    write_output(output)
+    print(f"Updated U.S. state data in {OUTPUT_PATH}")
 
 def build_iso3_to_name(who_records):
     """Build ISO3 -> preferred name mapping from WHO data."""
@@ -204,12 +275,24 @@ def main():
         print(f"ERROR fetching OWID data: {e}")
         return
 
-    # Step 3: Build name mapping & merge
+    # Step 3: Download official U.S. state data
+    print("\n--- Source 3: CDC/NCHS U.S. State Life Tables ---")
+    try:
+        us_regions = download_us_states()
+    except Exception as e:
+        print(f"ERROR fetching CDC state data: {e}")
+        return
+
+    # Step 4: Build name mapping & merge
     print("\n--- Merging data ---")
     iso3_names = build_iso3_to_name(who_records)
     countries_data = merge_data(who_records, owid_rows, iso3_names)
+    if "USA" not in countries_data:
+        print("ERROR: United States record not found after merge")
+        return
+    countries_data["USA"]["regions"] = us_regions
 
-    # Step 4: Compute global year range
+    # Step 5: Compute global year range
     all_years = []
     for cd in countries_data.values():
         for y_entry in cd["years"]:
@@ -217,27 +300,28 @@ def main():
     min_year = min(all_years) if all_years else 0
     max_year = max(all_years) if all_years else 0
 
-    # Step 5: Build output structure (sorted by country name)
+    # Step 6: Build output structure (sorted by country name)
     countries_list = []
     for code in sorted(countries_data.keys(), key=lambda c: countries_data[c]["name"].lower()):
         cd = countries_data[code]
-        countries_list.append({
+        country = {
             "code": code,
             "name": cd["name"],
             "years": cd["years"],
-        })
+        }
+        if "regions" in cd:
+            country["regions"] = cd["regions"]
+        countries_list.append(country)
 
     output = {
         "lastUpdated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "source": "WHO GHO OData API (WHOSIS_000001) + Our World in Data (life-expectancy-hmd-unwpp)",
+        "source": "WHO GHO OData API (WHOSIS_000001) + Our World in Data (life-expectancy-hmd-unwpp) + CDC/NCHS U.S. State Life Tables 2021",
         "yearRange": {"min": min_year, "max": max_year},
         "countries": countries_list,
     }
 
-    # Step 6: Write output JSON (minified)
-    os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
-    with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
-        json.dump(output, f, separators=(",", ":"), ensure_ascii=False)
+    # Step 7: Write output JSON (minified)
+    write_output(output)
 
     file_size = os.path.getsize(OUTPUT_PATH)
     print(f"\n=== DONE ===")
@@ -247,4 +331,7 @@ def main():
     print(f"File size: {file_size:,} bytes")
 
 if __name__ == "__main__":
-    main()
+    if "--states-only" in sys.argv:
+        update_us_states_only()
+    else:
+        main()
