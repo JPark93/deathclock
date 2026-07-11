@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Death Clock — Your Time Awaits</title>
+    <meta name="description" content="Calculate your expected expiry date and watch the countdown. Privacy-first: your data never leaves your browser.">
+    <meta name="referrer" content="no-referrer">
+    <meta name="robots" content="index, follow">
+    <!-- CSP meta tag — primary enforcement for GitHub Pages (no _headers support) -->
+    <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; worker-src 'self'; media-src 'none'; connect-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; upgrade-insecure-requests;"> -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Audio toggle button (fixed top-right) -->
+    <button id="audio-toggle" class="audio-toggle" aria-label="Toggle ambient audio" title="Toggle audio"></button>
+
+    <div class="container">
+        <header>
+            <h1>Death Clock</h1>
+            <p class="subtitle">Your time on this earth is finite. Let us count it down.</p>
+        </header>
+
+        <!-- Privacy notice -->
+        <div class="privacy-notice">
+            <strong>🔒 Privacy Notice:</strong> All data is processed entirely in your browser. Nothing is stored, transmitted, or logged. <a href="PRIVACY.md">Read our privacy policy</a>.
+        </div>
+
+        <!-- Form section -->
+        <section class="form-section" id="form-section">
+            <h2>Enter Your Details</h2>
+            <form id="death-form">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="birth-date">Birth Date</label>
+                        <input type="date" id="birth-date" name="birth-date" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sex">Biological Sex</label>
+                        <select id="sex" name="sex" required>
+                            <option value="">Select...</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="country">Country</label>
+                        <select id="country" name="country" required>
+                            <option value="">Select...</option>
+                            <!-- Populated by app.js from life_expectancy.json -->
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="smoker">Smoker</label>
+                        <select id="smoker" name="smoker">
+                            <option value="false">No</option>
+                            <option value="true">Yes</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="exercise">Exercise Level</label>
+                        <select id="exercise" name="exercise">
+                            <option value="sedentary">Sedentary</option>
+                            <option value="moderate" selected>Moderate</option>
+                            <option value="active">Active</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="alcohol">Alcohol Consumption</label>
+                        <select id="alcohol" name="alcohol">
+                            <option value="none" selected>None (0 drinks/week)</option>
+                            <option value="low">Low (1-7 drinks/week)</option>
+                            <option value="moderate">Moderate (8-14 drinks/week)</option>
+                            <option value="high">High (15-20 drinks/week)</option>
+                            <option value="very_high">Very High (21+ drinks/week)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bmi">BMI Category</label>
+                        <select id="bmi" name="bmi">
+                            <option value="underweight">Underweight (BMI < 18.5)</option>
+                            <option value="normal" selected>Normal (18.5 - 25)</option>
+                            <option value="overweight">Overweight (25 - 30)</option>
+                            <option value="obese">Obese (BMI > 30)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">Reveal My Fate</button>
+                    <button type="button" class="btn-secondary" id="clear-btn">Clear All Data</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Results section (hidden until form submitted) -->
+        <section class="results-section hidden" id="results-section">
+            <h2>Your Expiry Date</h2>
+
+            <div class="countdown-display">
+                <div class="countdown-number" id="countdown-days">0</div>
+                <div class="countdown-label">Days Remaining</div>
+            </div>
+
+            <div class="countdown-time" id="countdown-time">
+                <span id="cd-hours">00</span>h <span id="cd-minutes">00</span>m <span id="cd-seconds">00</span>s
+            </div>
+
+            <div class="time-lived">
+                <span class="label">Time Lived:</span>
+                <span id="time-lived">0y 0d 0h 0m 0s</span>
+            </div>
+
+            <div class="progress-section">
+                <div class="progress-label">
+                    <span>Life Progress</span>
+                    <span id="progress-percent">0%</span>
+                </div>
+                <div class="progress-bar" id="life-vial" role="progressbar" aria-label="Life progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                    <canvas id="fluid-canvas" class="fluid-canvas" width="112" height="240" aria-hidden="true"></canvas>
+                    <div class="progress-bar-fill" id="progress-fill" style="height: 0%"></div>
+                </div>
+            </div>
+
+            <div class="expiry-info">
+                <p><strong>Expected Expiry Date:</strong> <span id="expiry-date">--</span></p>
+                <p><strong>Base Life Expectancy:</strong> <span id="base-le">--</span> years</p>
+                <p><strong>Adjusted Life Expectancy:</strong> <span id="adjusted-le">--</span> years</p>
+                <p class="data-source-info" id="data-source-info"></p>
+            </div>
+
+            <div class="breakdown-section">
+                <h3>Lifestyle Modifier Breakdown</h3>
+                <table class="breakdown-table">
+                    <thead>
+                        <tr>
+                            <th>Factor</th>
+                            <th>Impact</th>
+                            <th>Years</th>
+                        </tr>
+                    </thead>
+                    <tbody id="breakdown-body">
+                        <!-- Populated by app.js -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="quote-section">
+                <div class="quote-display" id="quote-display"></div>
+            </div>
+        </section>
+
+        <!-- Error message area -->
+        <div class="error-message hidden" id="error-message"></div>
+
+        <footer>
+            <p>Death Clock — For entertainment purposes only. Not medical advice.</p>
+            <p><a href="PRIVACY.md">Privacy Policy</a> · <a href="README.md">About</a></p>
+        </footer>
+    </div>
+
+    <!-- Scripts (loaded with defer for proper execution order) -->
+    <script src="js/audio.js" defer></script>
+    <script src="js/app.js" defer></script>
+</body>
+</html>
