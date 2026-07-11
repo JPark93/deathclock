@@ -1,0 +1,26 @@
+# Death Clock
+
+> Death Clock is a free, privacy-first life expectancy calculator and live countdown. It is an educational and entertainment tool, not medical advice or an individual death prediction.
+
+Canonical URL: https://jonathanpark.dev/deathclock/
+
+## What the calculator does
+
+- Selects a population life expectancy baseline using birth year, country, and biological sex.
+- Offers an optional 2021 state-level refinement for users in the United States.
+- Applies broad population-level modifiers for smoking, exercise, alcohol consumption, and BMI category.
+- Displays an estimated date, live countdown, time lived, and a transparent modifier breakdown.
+
+## Data and methodology
+
+- WHO Global Health Observatory country and sex-specific life expectancy data.
+- Our World in Data historical life expectancy data.
+- CDC/NCHS U.S. State Life Tables for 2021.
+- Full methodology and modifier values: https://jonathanpark.dev/deathclock/README.md
+
+## Privacy and limitations
+
+- All answers and calculations remain in browser memory; there is no account, analytics, cookie, or persistent storage.
+- Inputs are not transmitted to the site owner, sponsors, or third parties.
+- Results are population-level estimates and must not be presented as medical advice or a factual prediction.
+- Privacy policy: https://jonathanpark.dev/deathclock/PRIVACY.md

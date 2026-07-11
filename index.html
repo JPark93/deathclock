@@ -3,34 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Death Clock — Your Time Awaits</title>
-    <meta name="description" content="Calculate your expected expiry date and watch the countdown. Privacy-first: your data never leaves your browser.">
+    <title>Death Clock: Life Expectancy Calculator &amp; Countdown</title>
+    <meta name="description" content="Estimate your life expectancy and watch a private, live countdown based on country, age, sex, and lifestyle. Your answers never leave your browser.">
+    <meta name="author" content="Jonathan J. Park">
     <meta name="referrer" content="no-referrer">
-    <meta name="robots" content="index, follow">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <meta name="theme-color" content="#090807">
+    <meta name="color-scheme" content="dark">
+    <link rel="canonical" href="https://jonathanpark.dev/deathclock/">
+    <link rel="me" href="https://github.com/JPark93">
+
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Death Clock">
+    <meta property="og:title" content="Death Clock: Life Expectancy Calculator &amp; Countdown">
+    <meta property="og:description" content="Estimate your life expectancy with a private calculator and watch the time count down. No answers are stored or transmitted.">
+    <meta property="og:url" content="https://jonathanpark.dev/deathclock/">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:image" content="https://jonathanpark.dev/deathclock/assets/social-preview.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:alt" content="Death Clock life expectancy countdown on a dark background">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Death Clock: Life Expectancy Calculator &amp; Countdown">
+    <meta name="twitter:description" content="A private life expectancy estimate and live countdown. Your answers stay in your browser.">
+    <meta name="twitter:image" content="https://jonathanpark.dev/deathclock/assets/social-preview.png">
+    <meta name="twitter:image:alt" content="Death Clock life expectancy countdown on a dark background">
+
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="sitemap" href="sitemap.xml" type="application/xml">
+    <link rel="alternate" href="llms.txt" type="text/plain" title="AI-readable Death Clock summary">
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Death Clock",
+        "url": "https://jonathanpark.dev/deathclock/",
+        "description": "A privacy-first life expectancy calculator and live countdown based on population data and self-reported lifestyle factors.",
+        "applicationCategory": "LifestyleApplication",
+        "operatingSystem": "Any",
+        "browserRequirements": "Requires JavaScript and Web Workers",
+        "isAccessibleForFree": true,
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        },
+        "author": {
+            "@type": "Person",
+            "name": "Jonathan J. Park",
+            "url": "https://github.com/JPark93",
+            "sameAs": ["https://github.com/JPark93"]
+        },
+        "dateModified": "2026-07-11",
+        "inLanguage": "en-US"
+    }
+    </script>
     <!-- CSP meta tag — primary enforcement for GitHub Pages (no _headers support) -->
-    <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; worker-src 'self'; media-src 'none'; connect-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; upgrade-insecure-requests;"> -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; worker-src 'self'; connect-src 'self'; manifest-src 'self'; media-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'; upgrade-insecure-requests;">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <!-- Audio toggle button (fixed top-right) -->
-    <button id="audio-toggle" class="audio-toggle" aria-label="Toggle ambient audio" title="Toggle audio"></button>
-
     <div class="container">
         <header class="site-header">
             <h1 class="site-title">Death Clock</h1>
-            <p class="site-subtitle">Your time on this earth is finite. Let us count it down.</p>
+            <p class="site-subtitle">Estimate your time. Watch it count down. Use it well.</p>
         </header>
 
         <!-- Privacy notice -->
         <div class="privacy-notice">
-            <strong>🔒 Privacy Notice:</strong> All data is processed entirely in your browser. Nothing is stored, transmitted, or logged. <a href="PRIVACY.md">Read our privacy policy</a>.
+            <strong>Private by design.</strong> Your answers stay in this browser and are never stored or transmitted. <a href="PRIVACY.md">Privacy policy</a>
         </div>
 
         <!-- Form section -->
         <section class="form-section" id="form-section">
-            <h2 class="form-section__title">Enter Your Details</h2>
+            <h2 class="form-section__title">Calculate Your Life Expectancy</h2>
             <form id="death-form">
                 <div class="form-grid">
                     <div class="form-group">
@@ -158,7 +209,7 @@
                     </div>
                     <div class="progress-bar hourglass" id="life-vial" role="progressbar" aria-label="Life elapsed in blood hourglass" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
                         <canvas id="fluid-canvas" class="fluid-canvas" width="144" height="250" aria-hidden="true"></canvas>
-                        <div class="progress-bar-fill" id="progress-fill" style="height: 0%"></div>
+                        <div class="progress-bar-fill" id="progress-fill"></div>
                     </div>
                 </div>
             </div>
@@ -207,14 +258,30 @@
         <!-- Error message area -->
         <div class="error-message hidden" id="error-message"></div>
 
+        <details class="methodology-disclosure" id="methodology">
+            <summary>
+                <span role="heading" aria-level="2">Methodology, sources &amp; privacy</span>
+                <span class="methodology-disclosure__action" aria-hidden="true"></span>
+            </summary>
+            <div class="methodology-content">
+                <p><strong>Estimate.</strong> Death Clock selects a population baseline using birth year, country, and biological sex, then applies broad lifestyle modifiers. U.S. users can optionally use 2021 state life tables.</p>
+                <p><strong>Limits.</strong> The result is an educational estimate based on population averages, not an individual diagnosis or prediction.</p>
+                <p><strong>Privacy.</strong> Inputs remain in browser memory and are never sent to the site owner, GitHub Sponsors, or another third party.</p>
+                <p class="source-line">Data refreshed July 11, 2026 from the <a href="https://www.who.int/data/gho">WHO Global Health Observatory</a>, <a href="https://ourworldindata.org/life-expectancy">Our World in Data</a>, and <a href="https://www.cdc.gov/nchs/data-visualization/state-life-expectancy/index_2021.htm">CDC/NCHS U.S. State Life Tables</a>.</p>
+            </div>
+        </details>
+
         <footer class="site-footer">
             <p>Death Clock — For entertainment purposes only. Not medical advice.</p>
-            <p><a href="PRIVACY.md">Privacy Policy</a> · <a href="README.md">About</a></p>
+            <nav class="footer-links" aria-label="Footer">
+                <a href="PRIVACY.md">Privacy</a>
+                <a href="README.md">About</a>
+                <a class="github-sponsor-link" href="https://github.com/sponsors/JPark93" rel="me">Sponsor on GitHub</a>
+            </nav>
         </footer>
     </div>
 
     <!-- Scripts (loaded with defer for proper execution order) -->
-    <script src="js/audio.js" defer></script>
     <script src="js/app.js" defer></script>
 </body>
 </html>

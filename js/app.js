@@ -71,7 +71,6 @@
         DOM.errorMessage      = document.getElementById('error-message');
         DOM.clearButton       = document.getElementById('clear-btn');
         DOM.editButton        = document.getElementById('edit-details');
-        DOM.audioToggle       = document.getElementById('audio-toggle');
         DOM.baseLifeExp       = document.getElementById('base-le') || document.getElementById('base-life-exp');
         DOM.adjLifeExp        = document.getElementById('adjusted-le') || document.getElementById('adj-life-exp');
     }
@@ -108,7 +107,6 @@
         DOM.country.addEventListener('change', updateRegionDropdown);
         DOM.clearButton.addEventListener('click', clearAllData);
         DOM.editButton.addEventListener('click', editDetails);
-        DOM.audioToggle.addEventListener('click', handleAudioToggle);
 
         if (DOM.breakdownSection && window.matchMedia('(max-width: 480px)').matches) {
             DOM.breakdownSection.removeAttribute('open');
@@ -483,9 +481,6 @@
     // =========================================================================
     function triggerCountdownTick(changedCards) {
         if (fluidSimulation) fluidSimulation.addDrop();
-        if (changedCards.length > 0 && window.DeathClockAudio && window.DeathClockAudio.playImpact) {
-            window.DeathClockAudio.playImpact();
-        }
 
         if (countdownTickTimeout) {
             clearTimeout(countdownTickTimeout);
@@ -1108,17 +1103,6 @@
             DOM.errorMessage.classList.add('hidden');
             DOM.errorMessage.classList.remove('fade-in');
         }
-    }
-
-    // =========================================================================
-    // handleAudioToggle — toggles ambient audio on/off
-    // =========================================================================
-    function handleAudioToggle() {
-        if (window.DeathClockAudio && window.DeathClockAudio.toggle) {
-            window.DeathClockAudio.toggle();
-        }
-        // Update visual state of the button
-        DOM.audioToggle.classList.toggle('active');
     }
 
     // =========================================================================

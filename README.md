@@ -7,10 +7,13 @@ A privacy-first, client-side web application that calculates your expected expir
 - Life expectancy data from WHO Global Health Observatory API (194 countries)
 - Optional state-level refinement for United States estimates
 - Lifestyle factor modifiers (smoking, exercise, alcohol, BMI)
-- Dark macabre theme with procedural ambient audio
+- Dark macabre visual theme
 - 100% client-side — zero server requests after page load
 - Web Worker isolation for sensitive data processing
 - Fully responsive and offline-capable
+- Canonical, Open Graph, and structured application metadata
+- Sitemap plus an AI-readable project summary
+- Privacy-preserving GitHub Sponsors support link
 
 ## Privacy Architecture
 - All user input (birth date, sex, country, lifestyle factors) stays in browser memory only
@@ -22,7 +25,6 @@ A privacy-first, client-side web application that calculates your expected expir
 
 ## Tech Stack
 - Vanilla HTML5, CSS3, JavaScript (ES6+) — zero dependencies
-- Web Audio API for procedural audio
 - Web Workers for isolated computation
 - Python 3 (urllib only) for build-time data fetching
 
@@ -72,6 +74,35 @@ To refresh only the nested U.S. state records without rebuilding the country his
 python scripts/fetch_data.py --states-only
 ```
 
+## Discovery and SEO
+
+The production page includes:
+
+- A canonical URL and descriptive search/social metadata in `index.html`
+- `WebApplication` structured data that describes only visible, verifiable features
+- A 1200 x 630 social preview image for Open Graph and large Twitter/X cards
+- `sitemap.xml` for search engine submission
+- `llms.txt` as a concise, plain-text summary for agents that choose to read the emerging convention
+- A compact, crawlable methodology disclosure with source attribution, limitations, and privacy details
+
+`llms.txt` is not a search-ranking standard and does not guarantee inclusion in AI answers. It complements crawlable HTML; it does not replace useful content, links, or a sitemap.
+
+Because the production URL is under `/deathclock/`, this repository's `robots.txt` is published at `/deathclock/robots.txt`. Standard crawlers request `https://jonathanpark.dev/robots.txt`, so the domain-root site's robots file should also allow `/deathclock/` and reference `https://jonathanpark.dev/deathclock/sitemap.xml`. Submit that sitemap directly in Google Search Console and Bing Webmaster Tools as well.
+
+## Monetization
+
+The live page links to the active [JPark93 GitHub Sponsors profile](https://github.com/sponsors/JPark93), which accepts monthly and one-time support. It is a normal outbound link rather than an embedded widget, so GitHub loads nothing until a visitor chooses to follow it. Calculator inputs and results are never sent to GitHub.
+
+Any future paid placement must be visibly labeled, use `rel="sponsored"` for paid outbound links, and receive no access to calculator inputs or result data.
+
+Third-party display ads are not preconfigured because every network requires a real publisher ID and approval. Before enabling one:
+
+1. Add the provider's actual seller entry to the domain-root `/ads.txt`; never deploy a placeholder publisher ID.
+2. Add only the required script, image, frame, and connection origins to the CSP.
+3. Update `PRIVACY.md` to name the provider and disclose cookies, storage, profiling, retention, and opt-out rights.
+4. Implement consent where required before loading advertising or analytics code.
+5. Recheck Core Web Vitals and mobile layout so ad loading does not displace the calculator.
+
 ## Deployment
 
 ### GitHub Pages (Recommended)
@@ -114,8 +145,7 @@ DC/
 │   └── style.css           All styling (dark macabre theme)
 ├── js/
 │   ├── app.js              Main application logic
-│   ├── worker.js           Web Worker for PII computation
-│   └── audio.js            Procedural audio engine
+│   └── worker.js           Web Worker for PII computation
 ├── data/
 │   └── life_expectancy.json  Static WHO life expectancy data
 ├── scripts/

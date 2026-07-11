@@ -1,0 +1,18 @@
+{
+  "name": "Death Clock: Life Expectancy Calculator",
+  "short_name": "Death Clock",
+  "description": "A private life expectancy estimate and live countdown.",
+  "start_url": "/deathclock/",
+  "scope": "/deathclock/",
+  "display": "standalone",
+  "background_color": "#090807",
+  "theme_color": "#090807",
+  "icons": [
+    {
+      "src": "assets/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

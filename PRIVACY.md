@@ -1,6 +1,6 @@
 # Privacy Policy — Death Clock
 
-**Last Updated: January 2026**
+**Last Updated: July 11, 2026**
 
 ## Our Commitment
 Death Clock is built with privacy by design. This document explains what data we process, how, and why.
@@ -40,6 +40,11 @@ We enforce a strict CSP:
 
 ## No Third Parties
 We use no analytics, advertising, social widgets, third-party fonts/CDNs, tag managers, or external JavaScript libraries.
+
+## GitHub Sponsors
+The page includes a normal outbound link to the creator's GitHub Sponsors profile. GitHub content, scripts, and cookies are not embedded in Death Clock and load only if you choose to follow that link. Calculator inputs and results are never sent to GitHub.
+
+A future direct sponsor will not receive calculator inputs or results, and any paid placement will be clearly labeled. If third-party advertising or analytics is ever introduced, this policy will be updated before that code is enabled.
 
 ## GDPR Compliance
 - **Lawful basis**: Legitimate interest (providing the requested calculation tool)
