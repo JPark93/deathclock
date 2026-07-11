@@ -288,13 +288,14 @@ body::before {
 /* Form grid: 2-column on desktop */
 .form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.25rem;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .form-group--full {
@@ -317,6 +318,8 @@ input[type="date"],
 input[type="number"],
 input[type="text"] {
   width: 100%;
+  min-width: 0;
+  min-height: 48px;
   padding: 0.7rem 0.9rem;
   font-family: var(--font-serif);
   font-size: 1rem;
@@ -329,6 +332,27 @@ input[type="text"] {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
+}
+
+/* Keep the native iOS date control large, legible, and inside its grid cell. */
+input[type="date"] {
+  display: block;
+  height: 50px;
+  line-height: 1.25;
+  color-scheme: dark;
+}
+
+input[type="date"]::-webkit-date-and-time-value {
+  min-height: 1.25em;
+  text-align: left;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0.25rem;
+  cursor: pointer;
+  filter: invert(82%) sepia(18%) saturate(600%);
 }
 
 select:focus,
@@ -361,6 +385,7 @@ select {
   text-transform: uppercase;
   border: none;
   border-radius: 4px;
+  min-height: 48px;
   cursor: pointer;
   transition: box-shadow 0.3s ease, transform 0.2s ease;
 }
@@ -408,6 +433,11 @@ select {
   opacity: 0;
   transition: opacity 0.6s ease-in;
   margin-bottom: 2rem;
+  scroll-margin-top: 1rem;
+}
+
+.results-section:focus {
+  outline: none;
 }
 
 .results-section.visible {
@@ -632,6 +662,12 @@ select {
   margin-top: 1.5rem;
   font-family: var(--font-mono);
   font-size: 0.9rem;
+}
+
+.breakdown-section {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .breakdown-table th,
@@ -861,7 +897,7 @@ select {
 /* Tablet and below */
 @media (max-width: 768px) {
   .container {
-    padding: 1.5rem;
+    padding: 1.5rem max(1.25rem, env(safe-area-inset-right)) 1.5rem max(1.25rem, env(safe-area-inset-left));
   }
 
   .site-title {
@@ -871,6 +907,14 @@ select {
   .form-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
+  }
+
+  select,
+  input[type="date"],
+  input[type="number"],
+  input[type="text"] {
+    font-size: 16px;
+    min-height: 52px;
   }
 
   .countdown-number {
@@ -893,7 +937,13 @@ select {
 /* Mobile */
 @media (max-width: 480px) {
   .container {
-    padding: 1rem;
+    padding: 1rem max(0.875rem, env(safe-area-inset-right)) 1rem max(0.875rem, env(safe-area-inset-left));
+  }
+
+  .site-header {
+    padding: 1.25rem 2.75rem 1rem 0;
+    margin-bottom: 1rem;
+    text-align: left;
   }
 
   .site-title {
@@ -906,7 +956,13 @@ select {
   }
 
   .form-section {
-    padding: 1rem;
+    padding: 1rem 0.875rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .form-section__title {
+    font-size: 1.15rem;
+    margin-bottom: 1.1rem;
   }
 
   .countdown-number {
@@ -937,6 +993,10 @@ select {
     font-size: 0.8rem;
   }
 
+  .breakdown-table {
+    min-width: 510px;
+  }
+
   .quote-display {
     font-size: 0.95rem;
     padding: 1rem;
@@ -944,16 +1004,24 @@ select {
 
   .btn-primary,
   .btn-secondary {
-    padding: 0.7rem 1.25rem;
-    font-size: 0.85rem;
+    width: 100%;
+    min-height: 50px;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
   }
 
   .form-actions {
     flex-direction: column;
+    gap: 0.75rem;
   }
 
   .results-section__card {
-    padding: 1rem;
+    padding: 1rem 0.875rem;
+  }
+
+  .privacy-notice {
+    padding: 0.875rem;
+    margin-top: 1rem;
   }
 }
 

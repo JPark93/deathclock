@@ -293,6 +293,32 @@
         // ---- Show a new quote and start rotation (every 15 seconds) ----
         showRandomQuote();
         startQuoteRotation();
+
+        // Move keyboard, screen-reader, and mobile users directly to the result.
+        scrollToResults();
+    }
+
+    function scrollToResults() {
+        if (!DOM.resultsSection) return;
+
+        // Wait until display/opacity classes and result text have been painted.
+        requestAnimationFrame(function() {
+            requestAnimationFrame(function() {
+                try {
+                    DOM.resultsSection.focus({ preventScroll: true });
+                } catch (e) {
+                    DOM.resultsSection.focus();
+                }
+
+                var reducedMotion = window.matchMedia &&
+                    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+                DOM.resultsSection.scrollIntoView({
+                    behavior: reducedMotion ? 'auto' : 'smooth',
+                    block: 'start'
+                });
+            });
+        });
     }
 
     // =========================================================================

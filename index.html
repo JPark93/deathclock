@@ -18,9 +18,9 @@
     <button id="audio-toggle" class="audio-toggle" aria-label="Toggle ambient audio" title="Toggle audio"></button>
 
     <div class="container">
-        <header>
-            <h1>Death Clock</h1>
-            <p class="subtitle">Your time on this earth is finite. Let us count it down.</p>
+        <header class="site-header">
+            <h1 class="site-title">Death Clock</h1>
+            <p class="site-subtitle">Your time on this earth is finite. Let us count it down.</p>
         </header>
 
         <!-- Privacy notice -->
@@ -30,7 +30,7 @@
 
         <!-- Form section -->
         <section class="form-section" id="form-section">
-            <h2>Enter Your Details</h2>
+            <h2 class="form-section__title">Enter Your Details</h2>
             <form id="death-form">
                 <div class="form-grid">
                     <div class="form-group">
@@ -102,8 +102,8 @@
         </section>
 
         <!-- Results section (hidden until form submitted) -->
-        <section class="results-section hidden" id="results-section">
-            <h2>Your Expiry Date</h2>
+        <section class="results-section results-section__card hidden" id="results-section" tabindex="-1" aria-labelledby="results-heading">
+            <h2 id="results-heading">Your Expiry Date</h2>
 
             <div class="countdown-display">
                 <div class="countdown-number" id="countdown-days">0</div>
@@ -161,7 +161,7 @@
         <!-- Error message area -->
         <div class="error-message hidden" id="error-message"></div>
 
-        <footer>
+        <footer class="site-footer">
             <p>Death Clock — For entertainment purposes only. Not medical advice.</p>
             <p><a href="PRIVACY.md">Privacy Policy</a> · <a href="README.md">About</a></p>
         </footer>
