@@ -26,7 +26,7 @@
 
     // ---------------------------------------------------------------------------
     // Feature detection — if no Web Audio API, return a silent no-op facade.
-    ---------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------
     var AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) {
         return {
@@ -34,6 +34,7 @@
             start: function () {},
             stop: function () {},
             toggle: function () {},
+            playImpact: function () {},
             isPlaying: false
         };
     }
@@ -242,6 +243,34 @@
             } else {
                 this.start();
             }
+        },
+
+        /** Play a short, low impact when a countdown card lands. */
+        playImpact: function () {
+            if (!this._isPlaying || !this._audioCtx) return;
+
+            var ctx = this._audioCtx;
+            var now = ctx.currentTime;
+            var oscillator = ctx.createOscillator();
+            var impactGain = ctx.createGain();
+            var impactFilter = ctx.createBiquadFilter();
+
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(92, now);
+            oscillator.frequency.exponentialRampToValueAtTime(42, now + 0.16);
+
+            impactFilter.type = 'lowpass';
+            impactFilter.frequency.setValueAtTime(190, now);
+            impactFilter.Q.setValueAtTime(1.2, now);
+
+            impactGain.gain.setValueAtTime(0.16, now);
+            impactGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
+
+            oscillator.connect(impactFilter);
+            impactFilter.connect(impactGain);
+            impactGain.connect(this._masterGain);
+            oscillator.start(now);
+            oscillator.stop(now + 0.21);
         },
 
         /** Whether audio is currently playing */

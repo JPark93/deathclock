@@ -103,41 +103,80 @@
 
         <!-- Results section (hidden until form submitted) -->
         <section class="results-section results-section__card hidden" id="results-section" tabindex="-1" aria-labelledby="results-heading">
-            <h2 id="results-heading">Your Expiry Date</h2>
-
-            <div class="countdown-display">
-                <div class="countdown-number" id="countdown-days">0</div>
-                <div class="countdown-label">Days Remaining</div>
+            <div class="results-header">
+                <h2 id="results-heading">Your Expiry Date</h2>
+                <button type="button" class="btn-edit" id="edit-details">Edit details</button>
             </div>
 
-            <div class="countdown-time" id="countdown-time">
-                <span id="cd-hours">00</span>h <span id="cd-minutes">00</span>m <span id="cd-seconds">00</span>s
-            </div>
+            <div class="results-overview">
+                <div class="clock-panel">
+                    <p class="clock-kicker">Estimated time remaining</p>
+                    <div class="countdown-time" id="countdown-time" role="timer" aria-label="Estimated time remaining">
+                        <div class="countdown-unit">
+                            <div class="flip-card"><span id="cd-years">00</span></div>
+                            <span class="countdown-label">Years</span>
+                        </div>
+                        <div class="countdown-unit">
+                            <div class="flip-card"><span id="cd-months">00</span></div>
+                            <span class="countdown-label">Months</span>
+                        </div>
+                        <div class="countdown-unit">
+                            <div class="flip-card"><span id="countdown-days">00</span></div>
+                            <span class="countdown-label">Days</span>
+                        </div>
+                        <div class="countdown-unit">
+                            <div class="flip-card"><span id="cd-hours">00</span></div>
+                            <span class="countdown-label">Hours</span>
+                        </div>
+                        <div class="countdown-unit">
+                            <div class="flip-card"><span id="cd-minutes">00</span></div>
+                            <span class="countdown-label">Minutes</span>
+                        </div>
+                        <div class="countdown-unit">
+                            <div class="flip-card"><span id="cd-seconds">00</span></div>
+                            <span class="countdown-label">Seconds</span>
+                        </div>
+                    </div>
 
-            <div class="time-lived">
-                <span class="label">Time Lived:</span>
-                <span id="time-lived">0y 0d 0h 0m 0s</span>
-            </div>
-
-            <div class="progress-section">
-                <div class="progress-label">
-                    <span>Life Progress</span>
-                    <span id="progress-percent">0%</span>
+                    <div class="time-lived">
+                        <span class="time-lived__label">Time lived</span>
+                        <strong id="time-lived">0 years, 0 months, 0 days</strong>
+                    </div>
                 </div>
-                <div class="progress-bar" id="life-vial" role="progressbar" aria-label="Life progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-                    <canvas id="fluid-canvas" class="fluid-canvas" width="112" height="240" aria-hidden="true"></canvas>
-                    <div class="progress-bar-fill" id="progress-fill" style="height: 0%"></div>
+
+                <div class="progress-section">
+                    <div class="progress-label">
+                        <span>Life elapsed</span>
+                        <strong id="progress-percent">0%</strong>
+                    </div>
+                    <div class="progress-bar hourglass" id="life-vial" role="progressbar" aria-label="Life elapsed in blood hourglass" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                        <canvas id="fluid-canvas" class="fluid-canvas" width="144" height="250" aria-hidden="true"></canvas>
+                        <div class="progress-bar-fill" id="progress-fill" style="height: 0%"></div>
+                    </div>
                 </div>
             </div>
 
-            <div class="expiry-info">
-                <p><strong>Expected Expiry Date:</strong> <span id="expiry-date">--</span></p>
-                <p><strong>Base Life Expectancy:</strong> <span id="base-le">--</span> years</p>
-                <p><strong>Adjusted Life Expectancy:</strong> <span id="adjusted-le">--</span> years</p>
+            <dl class="expiry-info">
+                <div class="expiry-stat expiry-stat--primary">
+                    <dt>Expected expiry date</dt>
+                    <dd id="expiry-date">--</dd>
+                </div>
+                <div class="expiry-stat">
+                    <dt>Base expectancy</dt>
+                    <dd><span id="base-le">--</span> years</dd>
+                </div>
+                <div class="expiry-stat">
+                    <dt>Adjusted expectancy</dt>
+                    <dd><span id="adjusted-le">--</span> years</dd>
+                </div>
                 <p class="data-source-info" id="data-source-info"></p>
-            </div>
+            </dl>
 
-            <div class="breakdown-section">
+            <details class="breakdown-section" open>
+                <summary class="breakdown-summary">
+                    <span>Lifestyle modifier breakdown</span>
+                    <span class="breakdown-summary__action" aria-hidden="true"></span>
+                </summary>
                 <h3>Lifestyle Modifier Breakdown</h3>
                 <table class="breakdown-table">
                     <thead>
@@ -151,7 +190,7 @@
                         <!-- Populated by app.js -->
                     </tbody>
                 </table>
-            </div>
+            </details>
 
             <div class="quote-section">
                 <div class="quote-display" id="quote-display"></div>

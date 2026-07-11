@@ -39,6 +39,7 @@
     var DOM = {};
 
     function cacheDomElements() {
+        DOM.formSection       = document.getElementById('form-section');
         DOM.form              = document.getElementById('death-form');
         DOM.birthDate         = document.getElementById('birth-date');
         DOM.sex               = document.getElementById('sex');
@@ -48,6 +49,8 @@
         DOM.alcohol           = document.getElementById('alcohol');
         DOM.bmi               = document.getElementById('bmi');
         DOM.resultsSection    = document.getElementById('results-section');
+        DOM.cdYears           = document.getElementById('cd-years');
+        DOM.cdMonths          = document.getElementById('cd-months');
         DOM.countdownDays     = document.getElementById('countdown-days');
         DOM.cdHours           = document.getElementById('cd-hours');
         DOM.cdMinutes         = document.getElementById('cd-minutes');
@@ -59,10 +62,12 @@
         DOM.progressBar       = document.getElementById('life-vial');
         DOM.fluidCanvas       = document.getElementById('fluid-canvas');
         DOM.progressPercent   = document.getElementById('progress-percent');
+        DOM.breakdownSection  = document.querySelector('.breakdown-section');
         DOM.breakdownBody     = document.getElementById('breakdown-body');
         DOM.quoteDisplay      = document.getElementById('quote-display');
         DOM.errorMessage      = document.getElementById('error-message');
         DOM.clearButton       = document.getElementById('clear-btn');
+        DOM.editButton        = document.getElementById('edit-details');
         DOM.audioToggle       = document.getElementById('audio-toggle');
         DOM.baseLifeExp       = document.getElementById('base-le') || document.getElementById('base-life-exp');
         DOM.adjLifeExp        = document.getElementById('adjusted-le') || document.getElementById('adj-life-exp');
@@ -98,7 +103,12 @@
         // Wire up event listeners
         DOM.form.addEventListener('submit', handleFormSubmit);
         DOM.clearButton.addEventListener('click', clearAllData);
+        DOM.editButton.addEventListener('click', editDetails);
         DOM.audioToggle.addEventListener('click', handleAudioToggle);
+
+        if (DOM.breakdownSection && window.matchMedia('(max-width: 480px)').matches) {
+            DOM.breakdownSection.removeAttribute('open');
+        }
 
         // Show a random quote immediately
         showRandomQuote();
@@ -234,6 +244,8 @@
     // Display results — called when the worker posts back a calculation result
     // =========================================================================
     function displayResults(result) {
+        DOM.formSection.classList.add('hidden');
+
         // Show the results section with a fade-in
         DOM.resultsSection.classList.remove('hidden');
         DOM.resultsSection.classList.add('visible');
@@ -248,10 +260,10 @@
 
         // Display base and adjusted life expectancy
         if (DOM.baseLifeExp) {
-            DOM.baseLifeExp.textContent = result.baseLifeExpectancy.toFixed(1) + ' years';
+            DOM.baseLifeExp.textContent = result.baseLifeExpectancy.toFixed(1);
         }
         if (DOM.adjLifeExp) {
-            DOM.adjLifeExp.textContent = result.adjustedLifeExpectancy.toFixed(1) + ' years';
+            DOM.adjLifeExp.textContent = result.adjustedLifeExpectancy.toFixed(1);
         }
 
         // Display data source info (year used, data origin)
@@ -277,9 +289,9 @@
 
                 row.className = cssClass;
                 row.innerHTML =
-                    '<td>' + escapeHtml(mod.factor) + '</td>' +
-                    '<td>' + escapeHtml(mod.description) + '</td>' +
-                    '<td>' + (mod.years > 0 ? '+' : '') + mod.years.toFixed(1) + ' yrs</td>';
+                    '<td data-label="Factor">' + escapeHtml(mod.factor) + '</td>' +
+                    '<td data-label="Impact">' + escapeHtml(mod.description) + '</td>' +
+                    '<td data-label="Years">' + (mod.years > 0 ? '+' : '') + mod.years.toFixed(1) + ' yrs</td>';
 
                 DOM.breakdownBody.appendChild(row);
             }
@@ -297,6 +309,18 @@
 
         // Move keyboard, screen-reader, and mobile users directly to the result.
         scrollToResults();
+    }
+
+    function editDetails() {
+        DOM.resultsSection.classList.add('hidden');
+        DOM.resultsSection.classList.remove('visible');
+        DOM.resultsSection.classList.remove('fade-in');
+        DOM.formSection.classList.remove('hidden');
+
+        requestAnimationFrame(function() {
+            DOM.birthDate.focus();
+            DOM.formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
     }
 
     function scrollToResults() {
@@ -327,29 +351,36 @@
     // =========================================================================
     function startCountdown() {
         if (countdownInterval) {
-            clearInterval(countdownInterval);
+            clearTimeout(countdownInterval);
         }
-        updateCountdown();    // call immediately so we don't wait 1 second
-        countdownInterval = setInterval(updateCountdown, 1000);
+        updateCountdown(false);
+        scheduleCountdownTick();
+    }
+
+    function scheduleCountdownTick() {
+        var delay = 1000 - (Date.now() % 1000) + 20;
+        countdownInterval = setTimeout(function() {
+            updateCountdown(true);
+            scheduleCountdownTick();
+        }, delay);
     }
 
     // =========================================================================
     // updateCountdown — the core tick function
     // =========================================================================
-    function updateCountdown() {
+    function updateCountdown(animateTick) {
         var now = new Date();
         var diff = expiryDate - now;
 
         if (diff <= 0) {
             // Time has elapsed
-            DOM.countdownDays.textContent = '0';
-            DOM.cdHours.textContent = '00';
-            DOM.cdMinutes.textContent = '00';
-            DOM.cdSeconds.textContent = '00';
-            if (DOM.countdownTime) {
-                DOM.countdownTime.classList.remove('tick');
-            }
-            DOM.timeLived.textContent = formatCompactDuration(birthDateObj, expiryDate);
+            updateCountdownUnit(DOM.cdYears, '00', animateTick);
+            updateCountdownUnit(DOM.cdMonths, '00', animateTick);
+            updateCountdownUnit(DOM.countdownDays, '00', animateTick);
+            updateCountdownUnit(DOM.cdHours, '00', animateTick);
+            updateCountdownUnit(DOM.cdMinutes, '00', animateTick);
+            updateCountdownUnit(DOM.cdSeconds, '00', animateTick);
+            DOM.timeLived.textContent = formatReadableDuration(birthDateObj, expiryDate);
 
             // Mark progress as 100%
             DOM.progressBarFill.style.height = '100%';
@@ -361,46 +392,59 @@
             return;
         }
 
-        // Calculate days, hours, minutes, seconds from the remaining ms
-        var days    = Math.floor(diff / (1000 * 60 * 60 * 24));
-        var hours   = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        var minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-        var seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        var remaining = getCalendarDuration(now, expiryDate);
 
-        DOM.countdownDays.textContent = days;
-        DOM.cdHours.textContent   = padZero(hours);
-        DOM.cdMinutes.textContent = padZero(minutes);
-        DOM.cdSeconds.textContent = padZero(seconds);
-        triggerCountdownTick();
+        var changedCards = [
+            updateCountdownUnit(DOM.cdYears, padZero(remaining.years), animateTick),
+            updateCountdownUnit(DOM.cdMonths, padZero(remaining.months), animateTick),
+            updateCountdownUnit(DOM.countdownDays, padZero(remaining.days), animateTick),
+            updateCountdownUnit(DOM.cdHours, padZero(remaining.hours), animateTick),
+            updateCountdownUnit(DOM.cdMinutes, padZero(remaining.minutes), animateTick),
+            updateCountdownUnit(DOM.cdSeconds, padZero(remaining.seconds), animateTick)
+        ].filter(Boolean);
+        if (animateTick) triggerCountdownTick(changedCards);
 
-        // Time lived in compact format
         if (birthDateObj) {
-            DOM.timeLived.textContent = formatCompactDuration(birthDateObj, now);
+            DOM.timeLived.textContent = formatReadableDuration(birthDateObj, now);
         }
 
         // Update progress bar
         updateProgressBar();
     }
 
+    function updateCountdownUnit(element, value, animate) {
+        if (!element || element.textContent === value) return null;
+
+        var previousValue = element.textContent;
+        element.setAttribute('data-previous', previousValue);
+        element.setAttribute('aria-label', value);
+        element.textContent = value;
+        if (!animate || !element.parentElement) return null;
+
+        var card = element.parentElement;
+        card.classList.remove('is-flipping');
+        void card.offsetWidth;
+        card.classList.add('is-flipping');
+        return card;
+    }
+
     // =========================================================================
     // triggerCountdownTick — adds a brief visual pulse every second tick
     // =========================================================================
-    function triggerCountdownTick() {
-        if (!DOM.countdownTime) return;
-
-        DOM.countdownTime.classList.remove('tick');
-        // Force reflow so the class re-add always retriggers animation
-        void DOM.countdownTime.offsetWidth;
-        DOM.countdownTime.classList.add('tick');
+    function triggerCountdownTick(changedCards) {
+        if (fluidSimulation) fluidSimulation.addDrop();
+        if (changedCards.length > 0 && window.DeathClockAudio && window.DeathClockAudio.playImpact) {
+            window.DeathClockAudio.playImpact();
+        }
 
         if (countdownTickTimeout) {
             clearTimeout(countdownTickTimeout);
         }
         countdownTickTimeout = setTimeout(function() {
-            if (DOM.countdownTime) {
-                DOM.countdownTime.classList.remove('tick');
+            for (var i = 0; i < changedCards.length; i++) {
+                changedCards[i].classList.remove('is-flipping');
             }
-        }, 180);
+        }, 480);
     }
 
     // =========================================================================
@@ -431,9 +475,8 @@
     }
 
     // =========================================================================
-    // createFluidSimulation — a small spring surface for the life-progress vial.
-    // The body rises from below the vial, while neighboring surface points pass
-    // energy between them to create a damped slosh rather than a looping sprite.
+    // createFluidSimulation — blood drains from the upper hourglass reservoir
+    // into the elapsed-life chamber below. Each clock tick supplies one drop.
     // =========================================================================
     function createFluidSimulation(canvas) {
         if (!canvas || !canvas.getContext) return null;
@@ -441,82 +484,155 @@
         var ctx = canvas.getContext('2d');
         var width = canvas.width;
         var height = canvas.height;
+        var centerX = width / 2;
+        var topInnerY = 24;
+        var neckTopY = 117;
+        var neckBottomY = 132;
+        var bottomInnerY = 226;
         var pointCount = 19;
         var surface = [];
-        var targetY = height + 8;
-        var levelY = height + 8;
+        var targetY = bottomInnerY + 4;
+        var levelY = bottomInnerY + 4;
         var levelVelocity = 0;
-        var lastLevel = 0;
         var lastTime = 0;
-        var sloshClock = 0;
+        var drop = null;
         var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
         for (var i = 0; i < pointCount; i++) {
             surface.push({ y: 0, velocity: 0 });
         }
 
-        function vialPath() {
+        function hourglassPath() {
             ctx.beginPath();
-            ctx.moveTo(3, 2);
-            ctx.lineTo(width - 3, 2);
-            ctx.lineTo(width - 3, height - 27);
-            ctx.quadraticCurveTo(width - 3, height - 3, width - 27, height - 3);
-            ctx.lineTo(27, height - 3);
-            ctx.quadraticCurveTo(3, height - 3, 3, height - 27);
+            ctx.moveTo(20, 20);
+            ctx.lineTo(width - 20, 20);
+            ctx.bezierCurveTo(width - 20, 60, centerX + 13, 99, centerX + 7, neckTopY);
+            ctx.quadraticCurveTo(centerX + 5, 123, centerX + 7, neckBottomY);
+            ctx.bezierCurveTo(centerX + 13, 151, width - 20, 189, width - 20, height - 20);
+            ctx.lineTo(20, height - 20);
+            ctx.bezierCurveTo(20, 189, centerX - 13, 151, centerX - 7, neckBottomY);
+            ctx.quadraticCurveTo(centerX - 5, 123, centerX - 7, neckTopY);
+            ctx.bezierCurveTo(centerX - 13, 99, 20, 60, 20, 20);
             ctx.closePath();
+        }
+
+        function createBloodGradient(startY, endY) {
+            var gradient = ctx.createLinearGradient(0, startY, width, endY);
+            gradient.addColorStop(0, '#310000');
+            gradient.addColorStop(0.48, '#920909');
+            gradient.addColorStop(0.78, '#5b0000');
+            gradient.addColorStop(1, '#230000');
+            return gradient;
+        }
+
+        function drawFrame() {
+            ctx.save();
+
+            var frameGradient = ctx.createLinearGradient(0, 0, width, 0);
+            frameGradient.addColorStop(0, '#2b1812');
+            frameGradient.addColorStop(0.28, '#80523a');
+            frameGradient.addColorStop(0.7, '#573222');
+            frameGradient.addColorStop(1, '#20110d');
+
+            ctx.strokeStyle = '#4d2d20';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(13, 17);
+            ctx.lineTo(13, height - 17);
+            ctx.moveTo(width - 13, 17);
+            ctx.lineTo(width - 13, height - 17);
+            ctx.stroke();
+
+            ctx.fillStyle = frameGradient;
+            ctx.fillRect(6, 5, width - 12, 16);
+            ctx.fillRect(6, height - 21, width - 12, 16);
+
+            ctx.strokeStyle = 'rgba(229, 205, 188, 0.45)';
+            ctx.lineWidth = 1.5;
+            hourglassPath();
+            ctx.stroke();
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(27, 29);
+            ctx.bezierCurveTo(29, 61, centerX - 16, 99, centerX - 10, 116);
+            ctx.stroke();
+            ctx.restore();
         }
 
         function draw() {
             ctx.clearRect(0, 0, width, height);
-            if (levelY > height + 5) return;
 
             ctx.save();
-            vialPath();
+            hourglassPath();
+            ctx.fillStyle = 'rgba(15, 8, 7, 0.7)';
+            ctx.fill();
             ctx.clip();
 
+            var elapsedFraction = Math.max(0, Math.min(1,
+                (bottomInnerY - levelY) / (bottomInnerY - neckBottomY)));
+            var topBloodY = topInnerY + ((neckTopY - topInnerY) * elapsedFraction);
+
+            if (topBloodY < neckTopY) {
+                ctx.fillStyle = createBloodGradient(topBloodY, neckTopY);
+                ctx.shadowColor = 'rgba(190, 15, 15, 0.35)';
+                ctx.shadowBlur = 9;
+                ctx.fillRect(0, topBloodY, width, neckTopY - topBloodY + 5);
+                ctx.shadowBlur = 0;
+
+                ctx.strokeStyle = 'rgba(255, 135, 125, 0.38)';
+                ctx.lineWidth = 1.2;
+                ctx.beginPath();
+                ctx.moveTo(0, topBloodY);
+                ctx.lineTo(width, topBloodY);
+                ctx.stroke();
+            }
+
             var step = width / (pointCount - 1);
-            ctx.beginPath();
-            ctx.moveTo(0, levelY + surface[0].y);
-            for (var i = 1; i < pointCount; i++) {
-                var previousX = (i - 1) * step;
-                var x = i * step;
-                var previousY = levelY + surface[i - 1].y;
-                var y = levelY + surface[i].y;
-                ctx.quadraticCurveTo(previousX, previousY, (previousX + x) / 2, (previousY + y) / 2);
+            if (levelY <= bottomInnerY + 2) {
+                ctx.beginPath();
+                ctx.moveTo(0, levelY + surface[0].y);
+                for (var i = 1; i < pointCount; i++) {
+                    var previousX = (i - 1) * step;
+                    var x = i * step;
+                    var previousY = levelY + surface[i - 1].y;
+                    var y = levelY + surface[i].y;
+                    ctx.quadraticCurveTo(previousX, previousY, (previousX + x) / 2, (previousY + y) / 2);
+                }
+                ctx.lineTo(width, levelY + surface[pointCount - 1].y);
+                ctx.lineTo(width, height);
+                ctx.lineTo(0, height);
+                ctx.closePath();
+
+                ctx.fillStyle = createBloodGradient(levelY, bottomInnerY);
+                ctx.shadowColor = 'rgba(190, 15, 15, 0.45)';
+                ctx.shadowBlur = 12;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                ctx.beginPath();
+                ctx.moveTo(0, levelY + surface[0].y);
+                for (var j = 1; j < pointCount; j++) {
+                    ctx.lineTo(j * step, levelY + surface[j].y);
+                }
+                ctx.strokeStyle = 'rgba(255, 135, 125, 0.42)';
+                ctx.lineWidth = 1.4;
+                ctx.stroke();
             }
-            ctx.lineTo(width, levelY + surface[pointCount - 1].y);
-            ctx.lineTo(width, height);
-            ctx.lineTo(0, height);
-            ctx.closePath();
 
-            var liquid = ctx.createLinearGradient(0, levelY, width, height);
-            liquid.addColorStop(0, '#310000');
-            liquid.addColorStop(0.48, '#870707');
-            liquid.addColorStop(0.78, '#5b0000');
-            liquid.addColorStop(1, '#230000');
-            ctx.fillStyle = liquid;
-            ctx.shadowColor = 'rgba(190, 15, 15, 0.45)';
-            ctx.shadowBlur = 12;
-            ctx.fill();
-            ctx.shadowBlur = 0;
-
-            // A narrow meniscus highlight follows the simulated surface.
-            ctx.beginPath();
-            ctx.moveTo(0, levelY + surface[0].y);
-            for (var j = 1; j < pointCount; j++) {
-                ctx.lineTo(j * step, levelY + surface[j].y);
+            if (drop) {
+                var dropGlow = ctx.createRadialGradient(drop.x - 1, drop.y - 1, 0, drop.x, drop.y, 7);
+                dropGlow.addColorStop(0, '#ff655b');
+                dropGlow.addColorStop(0.35, '#a70b0b');
+                dropGlow.addColorStop(1, 'rgba(72, 0, 0, 0)');
+                ctx.fillStyle = dropGlow;
+                ctx.beginPath();
+                ctx.ellipse(drop.x, drop.y, 5, 7, 0, 0, Math.PI * 2);
+                ctx.fill();
             }
-            ctx.strokeStyle = 'rgba(255, 135, 125, 0.42)';
-            ctx.lineWidth = 1.4;
-            ctx.stroke();
-
-            var depthShade = ctx.createLinearGradient(0, levelY, 0, height);
-            depthShade.addColorStop(0, 'rgba(255, 65, 55, 0.12)');
-            depthShade.addColorStop(0.55, 'rgba(35, 0, 0, 0.04)');
-            depthShade.addColorStop(1, 'rgba(10, 0, 0, 0.48)');
-            ctx.fillStyle = depthShade;
-            ctx.fillRect(0, levelY - 4, width, height - levelY + 4);
             ctx.restore();
+            drawFrame();
         }
 
         function animate(time) {
@@ -537,11 +653,7 @@
 
             // Each surface point is a damped spring; coupling carries waves.
             for (var i = 0; i < pointCount; i++) {
-                var horizontalPosition = (i / (pointCount - 1)) - 0.5;
-                var gentleTilt =
-                    Math.sin(time * 0.00115) * horizontalPosition * 0.3 +
-                    Math.sin((time * 0.002) + (i * 0.28)) * 0.08;
-                surface[i].velocity += (-surface[i].y * 0.045 + gentleTilt) * delta;
+                surface[i].velocity += -surface[i].y * 0.045 * delta;
                 surface[i].velocity *= Math.pow(0.965, delta);
             }
 
@@ -556,11 +668,18 @@
                 surface[k].y += surface[k].velocity * delta;
             }
 
-            // An occasional small edge impulse keeps the settled liquid alive.
-            sloshClock += delta;
-            if (sloshClock > 120 && targetY < height - 4) {
-                surface[Math.random() < 0.5 ? 1 : pointCount - 2].velocity += (Math.random() - 0.5) * 3;
-                sloshClock = 0;
+            if (drop) {
+                drop.velocity += 0.42 * delta;
+                drop.y += drop.velocity * delta;
+                var impactY = Math.max(neckBottomY + 3, Math.min(bottomInnerY, levelY));
+                if (drop.y >= impactY) {
+                    var impactIndex = Math.floor(pointCount / 2);
+                    surface[impactIndex].velocity += 4.2;
+                    surface[impactIndex - 1].velocity += 1.7;
+                    surface[impactIndex + 1].velocity += 1.7;
+                    levelVelocity += 0.12;
+                    drop = null;
+                }
             }
 
             draw();
@@ -570,22 +689,24 @@
         requestAnimationFrame(animate);
 
         return {
+            addDrop: function() {
+                if (targetY > bottomInnerY + 3 || reducedMotion) return;
+
+                drop = {
+                    x: centerX,
+                    y: neckBottomY,
+                    velocity: 0.8
+                };
+            },
             setLevel: function(percent) {
                 var nextLevel = Math.max(0, Math.min(100, Number(percent) || 0));
-                targetY = height - 4 - ((height - 8) * nextLevel / 100);
-
-                // Only kick the surface for a meaningful level change, not each timer tick.
-                if (Math.abs(nextLevel - lastLevel) > 0.25) {
-                    surface[2].velocity -= 2.8;
-                    surface[pointCount - 3].velocity += 2.1;
-                }
-                lastLevel = nextLevel;
+                targetY = bottomInnerY - ((bottomInnerY - neckBottomY) * nextLevel / 100);
             },
             reset: function() {
-                targetY = height + 8;
-                levelY = height + 8;
+                targetY = bottomInnerY + 4;
+                levelY = bottomInnerY + 4;
                 levelVelocity = 0;
-                lastLevel = 0;
+                drop = null;
                 for (var i = 0; i < pointCount; i++) {
                     surface[i].y = 0;
                     surface[i].velocity = 0;
@@ -596,31 +717,79 @@
     }
 
     // =========================================================================
-    // Helper: formatCompactDuration(start, end)
-    // Returns a human-readable string like "30y 125d 3h 22m 14s"
+    // Calendar-aware duration helpers keep years and months meaningful.
     // =========================================================================
-    function formatCompactDuration(startDate, endDate) {
-        var diff = endDate - startDate;
-        if (diff < 0) diff = 0;
+    function addCalendarMonths(date, months) {
+        var result = new Date(date);
+        var originalDay = result.getDate();
+        result.setDate(1);
+        result.setMonth(result.getMonth() + months);
+        var lastDay = new Date(result.getFullYear(), result.getMonth() + 1, 0).getDate();
+        result.setDate(Math.min(originalDay, lastDay));
+        return result;
+    }
 
-        var totalSeconds  = Math.floor(diff / 1000);
-        var years   = Math.floor(totalSeconds / (365.25 * 24 * 3600));
-        var remain  = totalSeconds - (years * 365.25 * 24 * 3600);
-        var days    = Math.floor(remain / (24 * 3600));
-        remain = remain - (days * 24 * 3600);
-        var hours   = Math.floor(remain / 3600);
-        remain = remain - (hours * 3600);
-        var minutes = Math.floor(remain / 60);
-        var seconds = remain - (minutes * 60);
+    function addCalendarDays(date, days) {
+        var result = new Date(date);
+        result.setDate(result.getDate() + days);
+        return result;
+    }
 
-        var parts = [];
-        if (years > 0)   parts.push(years + 'y');
-        if (days > 0)    parts.push(days + 'd');
-        if (hours > 0)   parts.push(hours + 'h');
-        if (minutes > 0) parts.push(minutes + 'm');
-        parts.push(seconds + 's');
+    function getCalendarDuration(startDate, endDate) {
+        var start = new Date(startDate);
+        var end = new Date(endDate);
+        if (end <= start) {
+            return { years: 0, months: 0, days: 0, hours: 0, minutes: 0, seconds: 0 };
+        }
 
-        return parts.join(' ');
+        var totalMonths = (end.getFullYear() - start.getFullYear()) * 12 + end.getMonth() - start.getMonth();
+        var cursor = addCalendarMonths(start, totalMonths);
+        if (cursor > end) {
+            totalMonths--;
+            cursor = addCalendarMonths(start, totalMonths);
+        }
+
+        var years = Math.floor(totalMonths / 12);
+        var months = totalMonths % 12;
+        var days = Math.max(0, Math.floor((end - cursor) / 86400000));
+        var dayCursor = addCalendarDays(cursor, days);
+
+        while (dayCursor > end && days > 0) {
+            days--;
+            dayCursor = addCalendarDays(cursor, days);
+        }
+        while (addCalendarDays(dayCursor, 1) <= end) {
+            days++;
+            dayCursor = addCalendarDays(cursor, days);
+        }
+
+        var remainder = Math.max(0, end - dayCursor);
+        var hours = Math.floor(remainder / 3600000);
+        remainder -= hours * 3600000;
+        var minutes = Math.floor(remainder / 60000);
+        remainder -= minutes * 60000;
+        var seconds = Math.floor(remainder / 1000);
+
+        return {
+            years: years,
+            months: months,
+            days: days,
+            hours: hours,
+            minutes: minutes,
+            seconds: seconds
+        };
+    }
+
+    function formatReadableDuration(startDate, endDate) {
+        var duration = getCalendarDuration(startDate, endDate);
+        return duration.years + ' ' + pluralize('year', duration.years) + ', ' +
+            duration.months + ' ' + pluralize('month', duration.months) + ', ' +
+            duration.days + ' ' + pluralize('day', duration.days) + '  |  ' +
+            padZero(duration.hours) + ':' + padZero(duration.minutes) + ':' + padZero(duration.seconds);
+    }
+
+    function pluralize(word, count) {
+        return count === 1 ? word : word + 's';
     }
 
     // =========================================================================
@@ -633,7 +802,7 @@
             DOM.quoteDisplay.style.opacity = '0';
             setTimeout(function() {
                 DOM.quoteDisplay.innerHTML =
-                    '"<span class="quote-text">' + escapeHtml(quote.text) + '</span>"' +
+                    '<span class="quote-text">' + escapeHtml(quote.text) + '</span>' +
                     '<span class="quote-author">— ' + escapeHtml(quote.author) + '</span>';
                 DOM.quoteDisplay.style.opacity = '1';
             }, 300);
@@ -656,7 +825,7 @@
     function clearAllData() {
         // Stop intervals
         if (countdownInterval) {
-            clearInterval(countdownInterval);
+            clearTimeout(countdownInterval);
             countdownInterval = null;
         }
         if (countdownTickTimeout) {
@@ -677,6 +846,9 @@
         if (DOM.form) {
             DOM.form.reset();
         }
+        if (DOM.formSection) {
+            DOM.formSection.classList.remove('hidden');
+        }
 
         // Hide results section
         if (DOM.resultsSection) {
@@ -689,7 +861,9 @@
         hideError();
 
         // Reset countdown display to zeros
-        DOM.countdownDays.textContent = '0';
+        DOM.cdYears.textContent = '00';
+        DOM.cdMonths.textContent = '00';
+        DOM.countdownDays.textContent = '00';
         DOM.cdHours.textContent = '00';
         DOM.cdMinutes.textContent = '00';
         DOM.cdSeconds.textContent = '00';
@@ -721,6 +895,10 @@
 
         // Terminate and recreate the worker (optional cleanup)
         initWorker();
+
+        requestAnimationFrame(function() {
+            DOM.birthDate.focus();
+        });
     }
 
     // =========================================================================
