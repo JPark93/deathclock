@@ -1,72 +1,59 @@
 # Privacy Policy — Death Clock
 
-## Last Updated: January 2025
+**Last Updated: January 2026**
 
 ## Our Commitment
-Death Clock is designed with privacy by design as a foundational principle. This document explains exactly what data we process, how, and why.
+Death Clock is built with privacy by design. This document explains what data we process, how, and why.
 
-## What Data Do We Process?
-When you use Death Clock, you provide:
-- Your birth date
-- Your biological sex (male/female)
-- Your country of residence
+## What Data We Process
+You provide:
+- Birth date
+- Biological sex (male/female)
+- Country of residence
 - Self-reported lifestyle factors (smoking, exercise, alcohol consumption, BMI category)
 
-## Where Is Data Processed?
-**Entirely in your browser.** All data processing happens client-side using JavaScript running on your device. We have no servers, databases, APIs, or backend systems that process your data.
+## Where Data Is Processed
+**Entirely in your browser.** All processing happens client-side via JavaScript. We have no servers, databases, APIs, or backend systems.
 
-## What Data Is Transmitted?
-**Nothing.** After the initial page load (which fetches static HTML, CSS, JS, and a JSON data file from our CDN), zero network requests are made. Your inputs never leave your browser.
+## What Data Is Transmitted
+**Nothing.** After the initial page load (static HTML, CSS, JS, and a JSON data file from our CDN), zero network requests are made. Your inputs never leave your browser.
 
-## How Long Is Data Retained?
-Data exists only in your browser's volatile memory (RAM) for the duration of your session. It is:
-- Never written to localStorage or sessionStorage
-- Never written to cookies
-- Never written to disk
+## Data Retention
+Data exists only in your browser's RAM for the duration of your session. It is:
+- Never written to localStorage, sessionStorage, cookies, or disk
 - Automatically destroyed when you close the tab or navigate away
 - Immediately destroyed when you click "Clear All Data"
 
 ## Web Worker Isolation
-Sensitive computations are performed in a Web Worker — a separate JavaScript execution thread. This provides process-level isolation, meaning:
-- Your raw input data is not accessible to the main page thread
+Sensitive computations run in a Web Worker (a separate JavaScript thread), providing process-level isolation:
+- Raw input data is not accessible to the main page thread
 - Only computed results (expiry date, modifier breakdown) are returned
-- Input data is explicitly set to null after computation
+- Input data is set to null after computation
 
 ## Content Security Policy
-We enforce a strict Content Security Policy:
-- `connect-src 'self'` — Only same-origin requests are allowed (for loading the static data file)
-- `script-src 'self'` — Only our own scripts can execute
-- `default-src 'none'` — Everything is denied by default
-- `form-action 'none'` — Forms cannot submit data anywhere
+We enforce a strict CSP:
+- `connect-src 'self'` — Only same-origin requests (for the static data file)
+- `script-src 'self'` — Only our own scripts execute
+- `default-src 'none'` — Everything denied by default
+- `form-action 'none'` — Forms cannot submit data
 - `frame-ancestors 'none'` — The page cannot be embedded in iframes
 
 ## No Third Parties
-We do not use:
-- Analytics tools (no Google Analytics, Plausible, etc.)
-- Advertising scripts
-- Social media widgets
-- Third-party fonts or CDNs
-- Tag managers
-- Any external JavaScript libraries
+We use no analytics, advertising, social widgets, third-party fonts/CDNs, tag managers, or external JavaScript libraries.
 
 ## GDPR Compliance
-Under the General Data Protection Regulation (GDPR):
 - **Lawful basis**: Legitimate interest (providing the requested calculation tool)
 - **Data minimization**: We only ask for data necessary for the calculation
 - **Purpose limitation**: Data is used solely for displaying your countdown
-- **Right to erasure**: Click "Clear All Data" or simply close the tab
+- **Right to erasure**: Click "Clear All Data" or close the tab
 - **Privacy by design**: Our client-side-only architecture is intentionally designed as privacy-by-design under Article 25
-- **No data transfers**: Since no data leaves your browser, there are no cross-border data transfers
+- **No data transfers**: Since no data leaves your browser, there are no cross-border transfers
 
 ## CCPA Compliance
-Under the California Consumer Privacy Act (CCPA):
-- We do not collect personal information
-- We do not sell personal information
-- We do not share personal information with third parties
-- No "Do Not Sell My Personal Information" link is needed because we do not sell data
+We do not collect, sell, or share personal information. No "Do Not Sell My Personal Information" link is needed.
 
 ## Data Source Attribution
-Life expectancy statistics are sourced from the World Health Organization Global Health Observatory (GHO) API. This data is fetched at build time and bundled as a static file. The WHO API is never contacted during your session.
+Life expectancy statistics are sourced from the WHO Global Health Observatory (GHO) API, fetched at build time and bundled as a static file. The WHO API is never contacted during your session.
 
 ## Contact
-For privacy questions or concerns, please contact: JonathanParkPhD@gmail.com
+For privacy questions or concerns: JonathanParkPhD@gmail.com

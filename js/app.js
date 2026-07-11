@@ -29,6 +29,7 @@
         { text: "Death is nothing, but to live defeated and inglorious is to die daily.", author: "Napoleon Bonaparte" },
         { text: "The goal isn't to live forever, the goal is to create something that will.", author: "Chuck Palahniuk" },
         { text: "Death is not the opposite of life, but a part of it.", author: "Haruki Murakami" },
+        { text: "LMAO! U gonna die soon!", author: "Creator of Site" },
         { text: "A man who dares to waste one hour of time has not discovered the value of life.", author: "Charles Darwin" }
     ];
 
@@ -538,10 +539,10 @@
             for (var i = 0; i < pointCount; i++) {
                 var horizontalPosition = (i / (pointCount - 1)) - 0.5;
                 var gentleTilt =
-                    Math.sin(time * 0.00115) * horizontalPosition * 0.18 +
-                    Math.sin((time * 0.0017) + (i * 0.28)) * 0.045;
-                surface[i].velocity += (-surface[i].y * 0.035 + gentleTilt) * delta;
-                surface[i].velocity *= Math.pow(0.955, delta);
+                    Math.sin(time * 0.00115) * horizontalPosition * 0.3 +
+                    Math.sin((time * 0.002) + (i * 0.28)) * 0.08;
+                surface[i].velocity += (-surface[i].y * 0.045 + gentleTilt) * delta;
+                surface[i].velocity *= Math.pow(0.965, delta);
             }
 
             for (var pass = 0; pass < 2; pass++) {
@@ -557,8 +558,8 @@
 
             // An occasional small edge impulse keeps the settled liquid alive.
             sloshClock += delta;
-            if (sloshClock > 230 && targetY < height - 4) {
-                surface[Math.random() < 0.5 ? 1 : pointCount - 2].velocity += (Math.random() - 0.5) * 1.4;
+            if (sloshClock > 120 && targetY < height - 4) {
+                surface[Math.random() < 0.5 ? 1 : pointCount - 2].velocity += (Math.random() - 0.5) * 3;
                 sloshClock = 0;
             }
 
